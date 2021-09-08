@@ -1,69 +1,57 @@
-class Renderer {
-    constructor(scale) {
-        this.cols = 64;
-        this.rows = 32;
+const COLS = 64;
+const ROWS = 32;
+const SCALE = 20;
 
-        this.scale = scale;
+class Monitor {
+    constructor(canvas, scale) {
+        this.cols = COLS;
+        this.rows = ROWS;
 
-        this.canvas = document.querySelector('canvas');
-        this.ctx = this.canvas.getContext('2d');
-
+        this.display = new Array(this.cols * this.rows);
+        for(let i=0; i < this.cols*this.rows; i++)
+            this.display[i] = 0;
+        this.canvas = canvas;
+        this.scale = SCALE;
+        console.log(this.canvas);
+        
         this.canvas.width = this.cols * this.scale;
         this.canvas.height = this.rows * this.scale;
 
-        this.display = new Array(this.cols * this.rows);
-
-
+        this.canvasCtx = this.canvas.getContext('2d');
     }
 
     setPixel(x, y) {
-
-        if (x > this.cols) {
+        if(x > this.cols)
             x -= this.cols;
-        } else if (x < 0) {
+        else if(x < 0)
             x += this.cols;
-        }
-        
-        if (y > this.rows) {
+
+        if(y > this.rows)
             y -= this.rows;
-        } else if (y < 0) {
+        else if(y<0)
             y += this.rows;
-        }
 
-        let pixelLoc = x + (y * this.cols);
-
-        this.display[pixelLoc] ^= 1;
-
-        return !this.display[pixelLoc];
-
-
-
-
+        this.display[x + (y * this.cols)] ^= 1;
+        return this.display[x + (y * this.cols)] != 1;
     }
 
     clear() {
         this.display = new Array(this.cols * this.rows);
+        for(let i=0; i < this.cols*this.rows; i++)
+            this.display[i] = 0;
     }
 
-    render() {
-        // Clears the display every render cycle. Typical for a render loop.
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
-        // Loop through our display array
-        for (let i = 0; i < this.cols * this.rows; i++) {
-            // Grabs the x position of the pixel based off of `i`
+    paint() {
+        this.canvasCtx.fillStyle = '#000';
+        this.canvasCtx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        for(let i=0; i < this.cols*this.rows; i++) {
             let x = (i % this.cols) * this.scale;
-    
-            // Grabs the y position of the pixel based off of `i`
             let y = Math.floor(i / this.cols) * this.scale;
-    
-            // If the value at this.display[i] == 1, then draw a pixel.
-            if (this.display[i]) {
-                // Set the pixel color to black
-                this.ctx.fillStyle = '#000';
-    
-                // Place a pixel at position (x, y) with a width and height of scale
-                this.ctx.fillRect(x, y, this.scale, this.scale);
+
+            if(this.display[i] == 1) {
+                this.canvasCtx.fillStyle = '#FFF';
+                this.canvasCtx.fillRect(x, y, this.scale, this.scale);
             }
         }
     }
@@ -71,10 +59,8 @@ class Renderer {
     testRender() {
         this.setPixel(0, 0);
         this.setPixel(5, 2);
+        this.paint();
     }
-
-
-
 }
 
-export default Renderer;
+export default Monitor;

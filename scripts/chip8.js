@@ -1,33 +1,35 @@
-import Renderer from './renderer.js';
+const MEMORY_SIZE = 4096
+const NUM_REGISTERS = 16;
 
-const renderer = new Renderer(10);
+class chip8
+{
+    constructor(monitor)
+    {
+        this.mempry = new Uint8Array(MEMORY_SIZE);
+        this.V = new Uint8Array(NUM_REGISTERS);
 
-let loop;
+        this.index = 16;
 
-let fps = 60, fpsInterval, startTime, now, then, elapsed;
+        this.pc = 0x200;
 
-function init() {
-    fpsInterval = 1000 / fps;
-    then = Date.now();
-    startTime = then;
+        this.stack = []
 
-    // TESTING CODE. REMOVE WHEN DONE TESTING.
-    renderer.testRender();
-    renderer.render();
-    // END TESTING CODE
+        this.sp = 0;
 
-    loop = requestAnimationFrame(step);
-}
+        this.delayTimer = 0;
 
-function step() {
-    now = Date.now();
-    elapsed = now - then;
+        this.soundTimer = 0;
 
-    if (elapsed > fpsInterval) {
-        // Cycle the CPU. We'll come back to this later and fill it out.
+        //this.keyboard
+
+        this.monitor = monitor;
+
+        this.paused = false;
+
+        this.speed = 10;
     }
 
-    loop = requestAnimationFrame(step);
+    
 }
 
-init();
+export default chip8;
