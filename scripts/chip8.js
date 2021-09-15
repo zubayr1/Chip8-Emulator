@@ -3,7 +3,7 @@ const NUM_REGISTERS = 16;
 
 class chip8
 {
-    constructor(monitor)
+    constructor(monitor, keyboard)
     {
         this.mempry = new Uint8Array(MEMORY_SIZE);
         this.V = new Uint8Array(NUM_REGISTERS);
@@ -21,6 +21,7 @@ class chip8
         this.soundTimer = 0;
 
         //this.keyboard
+        this.keyboard = keyboard;
 
         this.monitor = monitor;
 
@@ -225,6 +226,58 @@ class chip8
         }
 
         
+    }
+
+    loadSpritsIntoMemory() {
+        const sprites = [
+            0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+            0x20, 0x60, 0x20, 0x20, 0x70, // 1
+            0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+            0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+            0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+            0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+            0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+            0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+            0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+            0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+            0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+            0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+            0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+            0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+            0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+            0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+        ];
+        for (let i = 0; i < sprites.length; i++) {
+            this.memory[i] = sprites[i];
+        }
+    }
+
+    loadProgramIntoMemory(program) {
+        for(let i = 0; i < program.length; i++) {
+            this.memory[0x200 + i] = program[i];
+        }
+    }
+
+    updateTimers() {
+        if(this.delayTimer > 0)
+            this.delayTimer -= 1;
+        
+        if(this.soundTimer > 0)
+            this.soundTimer -= 1;
+    }
+
+    cycle() {
+        for(let i=0; i < this.speed; i++) {
+            if(!this.paused) {
+                let opcode = (this.memory[this.pc] << 8 | this.memory[this.pc + 1]);
+                this.interpretInstruction(opcode);
+            }
+        }
+
+        if(!this.paused)
+            this.updateTimers();
+        this.sound();
+        this.monitor.paint();
     }
 
     
