@@ -1,14 +1,14 @@
 const MEMORY_SIZE = 4096
 const NUM_REGISTERS = 16;
 
-class chip8
+class Chip8
 {
-    constructor(monitor, keyboard)
+    constructor(monitor, keyboard, speaker)
     {
-        this.mempry = new Uint8Array(MEMORY_SIZE);
-        this.V = new Uint8Array(NUM_REGISTERS);
+        this.memory = new Uint8Array(MEMORY_SIZE);
+        this.v = new Uint8Array(NUM_REGISTERS);
 
-        this.index = 16;
+        this.index = 0;
 
         this.pc = 0x200;
 
@@ -28,14 +28,77 @@ class chip8
         this.paused = false;
 
         this.speed = 10;
+
+        this.speaker = speaker;
+
     }
 
-    interpretInstructions(instruction)
-    {
-        this.pc+=2;
+    
 
-        const x = (instruction & 0x0F00) >> 8
-        const y = (instruction & 0x00F0) >> 4
+    loadSpritsIntoMemory() {
+        const sprites = [
+            0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+            0x20, 0x60, 0x20, 0x20, 0x70, // 1
+            0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+            0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+            0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+            0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+            0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+            0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+            0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+            0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+            0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+            0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+            0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+            0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+            0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+            0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+        ];
+        for (let i = 0; i < sprites.length; i++) {
+            this.memory[i] = sprites[i];
+        }
+    }
+
+    loadProgramIntoMemory(program) {
+        for(let i = 0; i < program.length; i++) {
+            this.memory[0x200 + i] = program[i];
+        }
+    }
+
+    updateTimers() {
+        if(this.delayTimer > 0)
+            this.delayTimer -= 1;
+        
+        if(this.soundTimer > 0)
+            this.soundTimer -= 1;
+    }
+
+    cycle() {
+        for(let i=0; i < this.speed; i++) {
+            if(!this.paused) {
+                let opcode = (this.memory[this.pc] << 8 | this.memory[this.pc + 1]);
+                this.interpretInstruction(opcode);
+            }
+        }
+
+        if(!this.paused)
+            this.updateTimers();
+        this.sound();
+        this.monitor.paint();
+    }
+
+    sound() {
+        if(this.soundTimer > 0)
+            this.speaker.play();
+        else
+            this.speaker.stop();
+    }
+
+    interpretInstruction(instruction) {
+        this.pc += 2;
+        
+        let x = (instruction & 0x0F00) >> 8;
+        let y = (instruction & 0x00F0) >> 4;
 
         switch(instruction & 0xF000) {
             case 0x0000:
@@ -225,62 +288,10 @@ class chip8
 
         }
 
-        
     }
 
-    loadSpritsIntoMemory() {
-        const sprites = [
-            0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-            0x20, 0x60, 0x20, 0x20, 0x70, // 1
-            0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-            0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-            0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-            0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-            0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-            0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-            0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-            0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-            0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-            0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-            0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-            0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-            0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-            0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-        ];
-        for (let i = 0; i < sprites.length; i++) {
-            this.memory[i] = sprites[i];
-        }
-    }
-
-    loadProgramIntoMemory(program) {
-        for(let i = 0; i < program.length; i++) {
-            this.memory[0x200 + i] = program[i];
-        }
-    }
-
-    updateTimers() {
-        if(this.delayTimer > 0)
-            this.delayTimer -= 1;
-        
-        if(this.soundTimer > 0)
-            this.soundTimer -= 1;
-    }
-
-    cycle() {
-        for(let i=0; i < this.speed; i++) {
-            if(!this.paused) {
-                let opcode = (this.memory[this.pc] << 8 | this.memory[this.pc + 1]);
-                this.interpretInstruction(opcode);
-            }
-        }
-
-        if(!this.paused)
-            this.updateTimers();
-        this.sound();
-        this.monitor.paint();
-    }
 
     
 }
 
-export default chip8;
+export default Chip8;
